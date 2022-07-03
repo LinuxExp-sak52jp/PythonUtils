@@ -1,5 +1,5 @@
 '''
-eventUtils.pyのテストケース
+eventUtils.wait_all()のテストケース
 '''
 import time
 import threading
@@ -19,6 +19,7 @@ def task(event, name, sleepTime):
     time.sleep(sleepTime)
     event.set()
 
+#------------ wait_all()のテスト --------------------
 a = threading.Event()
 b = threading.Event()
 
@@ -35,4 +36,5 @@ threading.Thread(
     target=task,name='TaskB',args=(b,'TaskB',5),daemon=True).start()
 r = eventUtil.wait_all((a,b),1)
 print(f"Timeout wait_all()->{r}")
+
 sys.exit(0)
