@@ -1,5 +1,6 @@
 from threading import Thread
 from time import sleep, time
+import threading
 
 def waitEventTask(event, barrier, idx):
     print("Waiting event{}".format(idx))
