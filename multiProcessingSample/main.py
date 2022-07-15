@@ -11,7 +11,7 @@ def workerProcess(*args):
 if __name__ == '__main__':
     #-- worker processを２つ作成 --
     workerProcs = []
-    workerConns = []
+    workerPipes = []
     for i in range(2):
         (c1,c2) = Pipe()
         name = f'Worker_{i}'
@@ -21,7 +21,7 @@ if __name__ == '__main__':
         )
         p.start()
         workerProcs.append((name,p))
-        workerConns.append(c1)
+        workerPipes.append(c1)
     
     #-- server processを起動 --
     (c1,c2) = Pipe()
@@ -31,16 +31,16 @@ if __name__ == '__main__':
     )
     s.start()
     serverProc = ('Server',s)
-    serverConn = c1
+    serverPipe = c1
 
     #-- メッセージループ開始準備 --
     isContinue = True
     waitConns = []
-    for c in workerConns:
+    for c in workerPipes:
         waitConns.append(c)
-    waitConns.append(serverConn)
+    waitConns.append(serverPipe)
     msg = ['StartWork']
-    for c in workerConns:
+    for c in workerPipes:
         c.send(msg)
     #-- メッセージループ開始 --
     # msg = [processName, command, data,....]
@@ -60,10 +60,21 @@ if __name__ == '__main__':
                 print(f'Message from {msg[0]}: ',end='')
                 for s in range(1,len(msg)):
                     print(s)
-            # -- console process TODO 7/13 --
+            # -- console process --
             else:
-                pass
-            pass
-        pass
-
-    pass
+                # -- 指定されたworker procを停止する --
+                if msg[1].lower() == 'quitworker':
+                    isFound = False
+                    for p in workerProcs:
+                        if p[0].lower() == msg[2].lower():
+                            print(f'{p[0]}を停止します')
+                            p[1].send('Quit')
+                            isFound = True
+                            break
+                    if isFound is not True:
+                        print(f'{msg[2]}の停止を指示されましたが見つかりませんでした')
+                # -- 全てのworker procを停止する --
+                elif msg[1].lower() == 'quitall':
+                    for p in workerProcs:
+                        print(f'{p[0]}を停止します')
+                        p[1].send('Quit')
