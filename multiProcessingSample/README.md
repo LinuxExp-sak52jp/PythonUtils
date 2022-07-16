@@ -25,8 +25,9 @@ main process
     - *QuitWorker Name*は*Name*を持つworker processを停止する。
     - *QuitAll*は全てのサブプロセスを停止させた後、main process自身を終了させる。
     - *Status*を受け取ったら現在の状態をconsole processへ返す。
-  - 共通規則
-    - *ReadyToQuit*を受けたら送信プロセスに対し*FinishToQuit*を送信し、pipeを待ち行列から削除する。
+  - 共通処理
+    - *ReadyToQuit*を受けたらpipeを待ち行列から削除した後、送信プロセスに対し*FinishToQuit*を送信する。
+    - *StartRequest*を受けたら送信プロセスに対して*Start*を送信する。
  
  ## 1.2. server process
 外部クライアントプロセスからの接続を待機し、接続に成功したら生成した接続オブジェクト(実体はソケット)をmain processへ送付する。なお、この外部クライアントがcontrol consoleとなる。
@@ -40,7 +41,7 @@ main process
 - Status: main processが管理する全てのworker process名称を取得して表示する。
 - QuitWorker: 指定したworkerを停止させる。
 - QuitAll: 全てのworkerを停止させる。
-
+- Exit: main processへ*ReadyToQuit*を送付して自身を終了させる
 
 
 
