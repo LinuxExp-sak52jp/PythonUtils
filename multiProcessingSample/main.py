@@ -3,9 +3,9 @@
 import sys
 import os
 
-sys.path.append(os.path.abspath(f'{os.path.dirname(__file__)}/../logUtils'))
+import definepath
+#sys.path.append(os.path.abspath(f'{os.path.dirname(__file__)}/../logUtils'))
 import logging
-import multiprocessing
 from multiprocessing import Process, connection, Pipe
 from typing import Any, List
 import logUtil
