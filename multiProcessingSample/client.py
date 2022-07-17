@@ -26,12 +26,12 @@ if __name__ == '__main__':
     引数でServerが指定されていたらそれに従う
     デフォルトは localhost:12345
     '''
-    serverAddr = ('localhost',12345)
+    serverAddr = ['localhost',12345]
     for i in range(1,len(argv)):
         serverAddr[i-1] = argv[i]
 
     print(f'Server:{serverAddr}への接続待ちです')
-    conn = Client(serverAddr)
+    conn = Client(tuple(serverAddr))
     print('Serverに接続しました')
 
     # -- serverレスポンスのタイムアウト値(sec) --
