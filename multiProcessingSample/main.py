@@ -2,6 +2,8 @@
 
 import sys
 import os
+
+from multiProcessingSample.client import printUsage
 sys.path.append(os.path.abspath(f'{os.path.dirname(__file__)}/../logUtils'))
 import logging
 import multiprocessing
@@ -63,6 +65,26 @@ if __name__ == '__main__':
 
     logger = logUtil.getLogger(__name__, logging.DEBUG)
 
+    #-- Server addr/port 設定 --
+    serverAddr = 'localhost'
+    serverPort = 12345
+    if len(sys.argv) > 1:
+        for i in range(1,len(sys.argv)):
+            if i == 1:
+                # addr
+                serverAddr = sys.argv[i]
+            elif i == 2:
+                # port
+                try:
+                    serverPort = int(sys.argv[i])
+                except Exception as e:
+                    printUsage(sys.argv[0])
+                    exit(-1)
+            else:
+                # 間違い
+                printUsage(sys.argv[0])
+                exit(-1)
+
     #-- worker processを２つ作成 --
     # workerProcs = [[name,connection,status(True|False)],...]
     workerProcs = []
@@ -82,7 +104,7 @@ if __name__ == '__main__':
     (c1,c2) = Pipe()
     s = Process(
         target=server,
-        args=('Server',c2),
+        args=('Server',c2,serverAddr,serverPort),
     )
     s.start()
     serverProc = ('Server',s)
