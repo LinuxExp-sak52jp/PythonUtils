@@ -3,7 +3,6 @@
 import sys
 import os
 
-from multiProcessingSample.client import printUsage
 sys.path.append(os.path.abspath(f'{os.path.dirname(__file__)}/../logUtils'))
 import logging
 import multiprocessing
@@ -55,6 +54,9 @@ def changeWorkerStatus(name: str, status: bool, workers: List):
             w[2] = status
             return
 
+def printUsage(progName: str):
+    print(f'Usage:{progName}')
+
 
 '''
 TODO 7/15 
@@ -95,6 +97,7 @@ if __name__ == '__main__':
         p = Process(
             target=workerProcess,
             args=(name,c2),
+            daemon=True
         )
         p.start()
         workerProcs.append([name,c1,False])
@@ -105,6 +108,7 @@ if __name__ == '__main__':
     s = Process(
         target=server,
         args=('Server',c2,serverAddr,serverPort),
+        daemon=True
     )
     s.start()
     serverProc = ('Server',s)
