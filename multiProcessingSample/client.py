@@ -9,7 +9,7 @@ def verifyInput(line: str) -> bool:
     if len(line) == 0:
         return False
     cmd = line.split()[0]
-    validCmds = ('quitworker','quitall','status','exit')
+    validCmds = ('quitworker','quitall','status','exit','shutdown')
     for c in validCmds:
         if cmd == c:
             return True
@@ -69,5 +69,14 @@ if __name__ == '__main__':
             else:
                 print('異常終了')
             break
+        elif line == 'shutdown':
+            print('shutdown処理を開始しました')
+            conn.send(['Console','Shutdown'])
+            reply = conn.recv()
+            print(reply)
+            print('shutdown処理が完了しました')
+            break
         else:
             printUsage()
+    
+    conn.close()

@@ -57,11 +57,51 @@ def changeWorkerStatus(name: str, status: bool, workers: List):
 def printUsage(progName: str):
     print(f'Usage:{progName}')
 
+def quitWorker(wp: List,console,targetName: str = ""):
+    """Worker Process停止処理
+
+    Args:
+        wp (list): Worker Process管理情報
+          wp[i]=[name,connection,status(True|False)]
+        console (connection): console processへの接続オブジェクト
+        targetName (str, optional): 対象となるworker識別名(""の時は全てが対象)
+    """
+    isFound = False
+    for p in wp:
+        if targetName == "" or p[0].lower() == targetName.lower():
+            print(f'{p[0]}を停止します')
+            if p[2] == True:
+                p[1].send('Quit')
+            else:
+                print(f'{p[0]}は既に停止しています')
+            isFound = True
+    if isFound:
+        s = '全てのworker'
+        if len(targetName) != 0:
+            s = targetName
+        c.send(f'{s}を停止しました')
+    else:
+        print(f'{targetName}の停止を指示されましたが見つかりませんでした')
+        c.send(f'{targetName}の停止を指示されましたが見つかりませんでした')
+
+
+def isAllworkerQuited(procs: List):
+    """全てのワーカーが停止しているかどうかを調べる
+
+    Args:
+        procs (List): worker process情報
+    """
+    isComplete = True
+    for wp in procs:
+        if wp[2] == True:
+            isComplete = False
+            break
+
+    return isComplete
 
 '''
 TODO 7/15 
-- main processを終了させる'shutdown'追加
-- Worker Processを起動する'StartWorker'追加
+- printUsage()を完成させること
 '''
 if __name__ == '__main__':
 
@@ -100,7 +140,7 @@ if __name__ == '__main__':
             daemon=True
         )
         p.start()
-        workerProcs.append([name,c1,False])
+        workerProcs.append([name,c1,False,p])
         workerPipes.append(c1)
 
     #-- server processを起動 --
@@ -111,11 +151,12 @@ if __name__ == '__main__':
         daemon=True
     )
     s.start()
-    serverProc = ('Server',s)
+    serverProc = ('Server',c1,s)
     serverPipe = c1
 
     #-- メッセージループ開始準備 --
     isContinue = True
+    isShutdown = False
     waitConns = []
     for c in workerPipes:
         waitConns.append(c)
@@ -133,6 +174,18 @@ if __name__ == '__main__':
                 c.send('FinishToQuit')
                 # 送信元がworkerだったらstatusを更新
                 changeWorkerStatus(msg[0], False, workerProcs)
+                # shutdown flagが立っていて全てのworkerが停止していたら
+                # 全ての処理を終了する
+                if isShutdown:
+                    # isComplete = True
+                    # for i in range(len(workerProcs)):
+                    #     wp = workerProcs[i]
+                    #     if wp[2] == True:
+                    #         isComplete = False
+                    #         break
+                    isComplete = isAllworkerQuited(workerProcs)
+                    if isComplete:
+                        isContinue = False
             elif msg[1].lower() == 'startrequest':
                 logger.debug(f'StartRequest受領:{msg[0]}')
                 c.send('Start')
@@ -155,33 +208,35 @@ if __name__ == '__main__':
                 # -- 指定されたworker procを停止する --
                 if msg[1].lower() == 'quitworker':
                     logger.debug(f'Consoleから受信:{msg[1]}')
-                    isFound = False
-                    for p in workerProcs:
-                        if p[0].lower() == msg[2].lower():
-                            print(f'{p[0]}を停止します')
-                            if p[2] == True:
-                                p[1].send('Quit')
-                            else:
-                                print(f'{p[0]}は既に停止しています')
-                            isFound = True
-                            break
-                    if isFound:
-                        c.send(f'{msg[2]}を停止しました')
-                    else:
-                        print(f'{msg[2]}の停止を指示されましたが見つかりませんでした')
-                        c.send(f'{msg[2]}の停止を指示されましたが見つかりませんでした')
+                    quitWorker(workerProcs,c,msg[2])
                 # -- 全てのworker procを停止する --
                 elif msg[1].lower() == 'quitall':
                     logger.debug(f'Consoleから受信:{msg[1]}')
-                    for p in workerProcs:
-                        if p[2] == True:
-                            print(f'{p[0]}を停止します')
-                            p[1].send('Quit')
-                        else:
-                            print(f'{p[0]}は既に停止しています')
-                    c.send('全てのワーカープロセスを停止しました')
+                    quitWorker(workerProcs,c)
                 # -- statusを返す --
                 elif msg[1].lower() == 'status':
                     logger.debug(f'Consoleから受信:{msg[1]}')
                     c.send([(wp[0],wp[2]) for wp in workerProcs])
+                # -- プロセス全体を終了する --
+                elif msg[1].lower() == 'shutdown':
+                    print('シャットダウンを開始します')
+                    waitConns.remove(c)
+                    if isAllworkerQuited(workerProcs):
+                        c.send('全てのworkerは停止済みです')
+                        isContinue = False
+                        break
+                    isShutdown = True
+                    # workerの停止
+                    quitWorker(workerProcs,c)
+    #-- 終了処理 --
+    # Server停止
+    serverProc[2].kill()
+    serverProc[2].join()
+
+    # connection close
+    serverProc[1].close()
+    for wp in workerProcs:
+        wp[1].close()
+
+    print('正常にシャットダウンしました')   
 
